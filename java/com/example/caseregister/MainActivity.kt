@@ -59,7 +59,11 @@ class MainActivity : Activity() {
 
         setContentView(webView)
 
-        webView.loadUrl("file:///android_asset/index.html")
+        webView.loadData(
+    "<html><body style='background:white;text-align:center;padding-top:100px;'><h1>سجل القضايا</h1><p>اختبار تشغيل التطبيق ناجح</p></body></html>",
+    "text/html",
+    "UTF-8"
+)
     }
 
     override fun onBackPressed() {
