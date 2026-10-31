@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#123b52">
+<title>سجل القضايا</title>
+<style>
+:root{--navy:#123b52;--teal:#167d83;--bg:#f3f6f8;--line:#dce4e9;--danger:#b42318}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Tahoma,Arial,sans-serif;color:#172b36}
+header{background:linear-gradient(135deg,#123b52,#167d83);color:white;padding:22px 16px;text-align:center}
+header h1{margin:0;font-size:25px}header p{margin:7px 0 0;color:#dceff0;font-size:13px}
+main{max-width:760px;margin:18px auto;padding:0 13px 35px}
+.card{background:white;border:1px solid var(--line);border-radius:15px;padding:16px;margin:13px 0;box-shadow:0 3px 12px #15384a0b}
+h2{font-size:18px;margin:0 0 14px;color:var(--navy)}
+label{display:block;font-size:14px;font-weight:bold;margin:12px 0 6px}
+input,textarea{width:100%;padding:12px;border:1px solid #cbd6dd;border-radius:9px;font:16px Tahoma,Arial;background:#fff;color:#172b36}
+textarea{min-height:75px;resize:vertical}
+button{border:0;border-radius:9px;padding:11px 15px;font: bold 14px Tahoma,Arial;cursor:pointer;background:var(--teal);color:white}
+button.secondary{background:#e9f0f3;color:var(--navy)}button.danger{background:#fff0ef;color:var(--danger);border:1px solid #f3c7c3}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.hidden{display:none!important}.muted{color:#617580;font-size:13px;line-height:1.7}
+.record{border:1px solid var(--line);border-radius:12px;padding:13px;margin:10px 0}
+.record h3{margin:0 0 8px;color:var(--navy);font-size:17px}
+.record p{margin:5px 0;font-size:14px;line-height:1.6;overflow-wrap:anywhere}
+.pill{display:inline-block;background:#eaf4f4;color:#17676b;border-radius:20px;padding:4px 9px;font-size:12px;margin-bottom:8px}
+#message{margin-top:10px;color:var(--danger);font-size:13px}
+.toprow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.small{font-size:12px}
+</style>
+</head>
+<body>
+<header><h1>سجل القضايا</h1><p>إدارة وحفظ بيانات القضايا على هذا الهاتف</p></header>
+<main>
+<section id="lock" class="card">
+<h2 id="lockTitle">إنشاء كلمة مرور</h2>
+<p id="lockHint" class="muted">أنشئ كلمة مرور خاصة بك. ستُطلب منك عند فتح التطبيق لاحقًا.</p>
+<label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" placeholder="أدخل كلمة المرور">
+<div id="confirmWrap"><label for="confirm">تأكيد كلمة المرور</label><input id="confirm" type="password" autocomplete="new-password" placeholder="أعد كتابة كلمة المرور"></div>
+<div class="actions"><button id="unlockBtn">حفظ وفتح التطبيق</button></div><div id="message"></div>
+</section>
+
+<section id="app" class="hidden">
+<div class="card">
+<div class="toprow"><h2>بحث شامل</h2><span class="pill" id="count">0 سجل</span></div>
+<input id="search" type="search" placeholder="ابحث في الحصر أو القضية أو الاسم أو الحكم أو العنوان...">
+<p class="muted">البحث يشمل جميع الحقول، وتظهر النتائج أثناء الكتابة.</p>
+</div>
+<div class="card">
+<h2 id="formTitle">إضافة سجل جديد</h2>
+<input id="editId" type="hidden">
+<label for="field0">الحصر</label><input id="field0" placeholder="اكتب رقم أو بيانات الحصر">
+<label for="field1">القضية</label><input id="field1" placeholder="اكتب رقم القضية">
+<label for="field2">الاسم</label><input id="field2" placeholder="اكتب الاسم">
+<label for="field3">الحكم</label><textarea id="field3" placeholder="اكتب الحكم"></textarea>
+<label for="field4">العنوان</label><textarea id="field4" placeholder="اكتب العنوان"></textarea>
+<div class="actions"><button id="saveBtn">حفظ البيانات</button><button class="secondary" id="clearBtn">تفريغ الخانات</button></div>
+</div>
+<div class="card">
+<div class="toprow"><h2>السجلات المحفوظة</h2><span class="muted small">محفوظة على هذا الجهاز</span></div>
+<div id="records"></div>
+<div class="actions">
+<button class="secondary" id="exportBtn">تصدير نسخة احتياطية</button>
+<button class="secondary" id="importBtn">استيراد نسخة</button>
+<input id="importFile" type="file" accept="application/json,.json" class="hidden">
+<button class="secondary" id="changePassBtn">تغيير كلمة المرور</button>
+<button class="danger" id="logoutBtn">قفل التطبيق</button>
+</div>
+<p class="muted">احتفظ بالنسخة الاحتياطية في مكان آمن. حذف بيانات المتصفح أو تغيير الهاتف قد يؤدي إلى فقد السجلات ما لم تستعد النسخة الاحتياطية.</p>
+</div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const fields=['الحصر','القضية','الاسم','الحكم','العنوان'];
+const KEY='qadaya_records_v1', PASS='qadaya_pass_v1';
+let records=[], editing=null, mode='setup';
+function load(){try{records=JSON.parse(localStorage.getItem(KEY)||'[]');if(!Array.isArray(records))records=[]}catch{records=[]}}
+function save(){localStorage.setItem(KEY,JSON.stringify(records))}
+function showLock(){ $('lock').classList.remove('hidden');$('app').classList.add('hidden');$('password').value='';$('confirm').value='';$('message').textContent='';
+const exists=!!localStorage.getItem(PASS);mode=exists?'login':'setup';
+$('lockTitle').textContent=exists?'فتح سجل القضايا':'إنشاء كلمة مرور';
+$('lockHint').textContent=exists?'أدخل كلمة المرور لعرض السجلات.':'أنشئ كلمة مرور خاصة بك. ستُطلب منك عند فتح التطبيق لاحقًا.';
+$('confirmWrap').classList.toggle('hidden',exists);$('unlockBtn').textContent=exists?'دخول':'حفظ وفتح التطبيق';}
+async function derive(pw,salt){const enc=new TextEncoder();const key=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:180000,hash:'SHA-256'},key,256);return [...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function b64(bytes){return btoa(String.fromCharCode(...bytes))}
+async function setPassword(pw){const salt=crypto.getRandomValues(new Uint8Array(16));localStorage.setItem(PASS,JSON.stringify({salt:b64(salt),hash:await derive(pw,salt)}))}
+async function verify(pw){const x=JSON.parse(localStorage.getItem(PASS));const salt=Uint8Array.from(atob(x.salt),c=>c.charCodeAt(0));return (await derive(pw,salt))===x.hash}
+$('unlockBtn').onclick=async()=>{const pw=$('password').value;if(pw.length<4){$('message').textContent='كلمة المرور يجب ألا تقل عن 4 أحرف أو أرقام.';return}
+if(mode==='setup'){if(pw!==$('confirm').value){$('message').textContent='كلمتا المرور غير متطابقتين.';return}await setPassword(pw);openApp()}
+else{if(await verify(pw))openApp();else $('message').textContent='كلمة المرور غير صحيحة.'}};
+$('password').addEventListener('keydown',e=>{if(e.key==='Enter')$('unlockBtn').click()});
+function openApp(){$('lock').classList.add('hidden');$('app').classList.remove('hidden');load();render()}
+function clearForm(){editing=null;for(let i=0;i<5;i++)$('field'+i).value='';$('editId').value='';$('formTitle').textContent='إضافة سجل جديد';$('saveBtn').textContent='حفظ البيانات'}
+$('clearBtn').onclick=clearForm;
+$('saveBtn').onclick=()=>{const values=fields.map((_,i)=>$('field'+i).value.trim());if(values.every(v=>!v)){alert('اكتب بيانات في خانة واحدة على الأقل.');return}
+if(editing){const r=records.find(x=>x.id===editing);if(r)r.values=values}else records.unshift({id:Date.now().toString()+Math.random().toString(16).slice(2),values});
+save();clearForm();render();alert('تم حفظ البيانات.')};
+$('search').oninput=render;
+function render(){const q=$('search').value.trim().toLocaleLowerCase('ar');const filtered=records.filter(r=>r.values.some(v=>(v||'').toLocaleLowerCase('ar').includes(q)));$('count').textContent=records.length+' سجل';const root=$('records');root.innerHTML='';
+if(!filtered.length){root.innerHTML='<p class="muted">لا توجد سجلات مطابقة.</p>';return}
+filtered.forEach(r=>{const d=document.createElement('div');d.className='record';const title=document.createElement('h3');title.textContent=r.values[2]||'سجل بدون اسم';d.appendChild(title);
+r.values.forEach((v,i)=>{const p=document.createElement('p');const b=document.createElement('b');b.textContent=fields[i]+': ';p.append(b,document.createTextNode(v||'—'));d.appendChild(p)});
+const a=document.createElement('div');a.className='actions';const edit=document.createElement('button');edit.className='secondary';edit.textContent='تعديل';edit.onclick=()=>{editing=r.id;r.values.forEach((v,i)=>$('field'+i).value=v);$('formTitle').textContent='تعديل سجل';$('saveBtn').textContent='حفظ التعديلات';window.scrollTo({top:0,behavior:'smooth'})};
+const del=document.createElement('button');del.className='danger';del.textContent='حذف';del.onclick=()=>{if(confirm('هل تريد حذف هذا السجل نهائيًا؟')){records=records.filter(x=>x.id!==r.id);save();render()}};a.append(edit,del);d.appendChild(a);root.appendChild(d)})}
+$('logoutBtn').onclick=showLock;
+$('changePassBtn').onclick=async()=>{const old=prompt('أدخل كلمة المرور الحالية:');if(old===null)return;if(!(await verify(old))){alert('كلمة المرور الحالية غير صحيحة.');return}const n=prompt('أدخل كلمة المرور الجديدة (4 أحرف أو أرقام على الأقل):');if(n===null)return;if(n.length<4){alert('كلمة المرور قصيرة جدًا.');return}const c=prompt('أعد كتابة كلمة المرور الجديدة:');if(c!==n){alert('كلمتا المرور غير متطابقتين.');return}await setPassword(n);alert('تم تغيير كلمة المرور.')};
+$('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({app:'سجل القضايا',version:1,records},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='نسخة-احتياطية-سجل-القضايا.json';a.click();URL.revokeObjectURL(a.href)};
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!Array.isArray(data.records))throw 0;if(confirm('سيتم إضافة سجلات النسخة الاحتياطية إلى السجلات الحالية. متابعة؟')){records=[...data.records,...records];save();render();alert('تم استيراد البيانات.')}}catch{alert('ملف النسخة الاحتياطية غير صالح.')}e.target.value=''};
+showLock();
+</script>
+</body></html>
